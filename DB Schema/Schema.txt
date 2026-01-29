@@ -1,0 +1,15 @@
+CREATE DATABASE CodeReelsDB;
+GO
+
+USE CodeReelsDB;
+GO
+
+CREATE TABLE Reels (
+    Id INT IDENTITY PRIMARY KEY,
+    VideoId VARCHAR(20) NOT NULL UNIQUE,
+    Title NVARCHAR(255),
+    Tags NVARCHAR(100),
+    PublishedAt DATETIME,
+    Source VARCHAR(20),
+    CreatedAt DATETIME DEFAULT GETDATE()
+);

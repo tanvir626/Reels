@@ -1,0 +1,54 @@
+﻿@model List<Reels.Models.Reel>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CodeReels</title>
+
+    <style>
+        body { margin:0; background:black; }
+        .feed {
+          height:100vh;
+          overflow-y:scroll;
+          scroll-snap-type:y mandatory;
+        }
+        .reel {
+          height:100vh;
+          scroll-snap-align:start;
+        }
+        iframe {
+          width:100%;
+          height:100%;
+          border:none;
+        }
+        .footer {
+          position:fixed;
+          bottom:5px;
+          width:100%;
+          color:#ccc;
+          font-size:12px;
+          text-align:center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="feed">
+        @foreach (var v in Model)
+        {
+            <div class="reel">
+                <iframe src="https://www.youtube.com/embed/@v.VideoId?autoplay=1&mute=1&playsinline=1"
+                        allow="autoplay">
+                </iframe>
+            </div>
+        }
+    </div>
+
+    <div class="footer">
+        Embedded from YouTube • Copyright belongs to creators
+    </div>
+
+</body>
+</html>
