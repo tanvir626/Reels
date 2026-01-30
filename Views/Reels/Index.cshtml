@@ -1,54 +1,142 @@
 ﻿@model List<Reels.Models.Reel>
+@{
+    Layout = "_Layout";
+}
 
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CodeReels</title>
+<style>
+    html, body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        overflow: hidden;
+    }
 
-    <style>
-        body { margin:0; background:black; }
-        .feed {
-          height:100vh;
-          overflow-y:scroll;
-          scroll-snap-type:y mandatory;
-        }
-        .reel {
-          height:100vh;
-          scroll-snap-align:start;
-        }
-        iframe {
-          width:100%;
-          height:100%;
-          border:none;
-        }
-        .footer {
-          position:fixed;
-          bottom:5px;
-          width:100%;
-          color:#ccc;
-          font-size:12px;
-          text-align:center;
-        }
-    </style>
-</head>
+    #player {
+        width: 100vw;
+        height: 100vh;
+        border: none;
+    }
 
-<body>
+    .controls {
+        position: fixed;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
 
-    <div class="feed">
-        @foreach (var v in Model)
-        {
-            <div class="reel">
-                <iframe src="https://www.youtube.com/embed/@v.VideoId?autoplay=1&mute=1&playsinline=1"
-                        allow="autoplay">
-                </iframe>
-            </div>
+        .controls button {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 12px 14px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
         }
+
+            .controls button:hover {
+                background: rgba(255,255,255,0.3);
+            }
+
+    .index-indicator {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: #aaa;
+        font-size: 13px;
+        font-family: sans-serif;
+    }
+</style>
+
+@if (!Model.Any())
+{
+    <p style="color:white;text-align:center;margin-top:40vh">
+        No reels found
+    </p>
+}
+else
+{
+    <iframe id="player"  allow="autoplay; encrypted-media"  allowfullscreen>  </iframe>
+
+    <div class="controls">
+        <button onclick="prevVideo()">⏮️</button>
+        <button onclick="nextVideo()">⏭️</button>
     </div>
 
-    <div class="footer">
-        Embedded from YouTube • Copyright belongs to creators
-    </div>
+    <div class="index-indicator">  Scroll ↑ ↓ or use buttons </div>
+}
 
-</body>
-</html>
+<script>
+    let reels = @Html.Raw(
+                System.Text.Json.JsonSerializer.Serialize(
+                        Model.Select(x => x.VideoId)
+                )
+        );
+
+    let index = 0;
+    let skip = reels.length;
+    const take = 20;
+    let loading = false;
+
+    const iframe = document.getElementById("player");
+
+    function loadVideo() {
+        iframe.src =
+            "https://www.youtube.com/embed/" + reels[index] +
+            "?autoplay=1&mute=1&playsinline=1&rel=0";
+    }
+
+    async function loadNextBatch() {
+        if (loading) return;
+        loading = true;
+
+        const res = await fetch(`/Reels/Load?skip=${skip}&take=${take}`);
+        const data = await res.json();
+
+        if (data.length === 0) {
+            skip = 0; // loop DB
+            loading = false;
+            return;
+        }
+
+        // 🧹 DELETE old videos
+        reels = data;
+        index = 0;
+        skip += data.length;
+
+        loadVideo();
+        loading = false;
+    }
+
+    function nextVideo() {
+        index++;
+
+        if (index >= reels.length - 1) {
+            loadNextBatch();
+            return;
+        }
+
+        loadVideo();
+    }
+
+    function prevVideo() {
+        index--;
+        if (index < 0) index = 0;
+        loadVideo();
+    }
+
+    iframe.onerror = () => nextVideo();
+
+    window.addEventListener("wheel", e => {
+        if (e.deltaY > 0) nextVideo();
+        if (e.deltaY < 0) prevVideo();
+    });
+
+    if (reels.length > 0) loadVideo();
+</script>
+
+

@@ -1,25 +1,38 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
 using Reels.Data;
-using Microsoft.AspNetCore.Mvc;
 
-namespace Reels.Controllers;
-
-public class ReelsController : Controller
+namespace Reels.Controllers
 {
-    private readonly AppDbContext _db;
-
-    public ReelsController(AppDbContext db)
+    public class ReelsController : Controller
     {
-        _db = db;
-    }
+        private readonly AppDbContext _db;
 
-    public IActionResult Index()
-    {
-        var reels = _db.Reels
-            .OrderByDescending(r => r.PublishedAt)
-            .Take(20)
-            .ToList();
+        public ReelsController(AppDbContext db)
+        {
+            _db = db;
+        }
 
-        return View(reels);
+        public IActionResult Index()
+        {
+            var reels = _db.Reels
+                .OrderByDescending(r => r.PublishedAt)
+                .Take(50)
+                .ToList();
+
+            return View(reels);
+        }
+
+        [HttpGet]
+public IActionResult Load(int skip = 0, int take = 20)
+{
+    var reels = _db.Reels
+        .OrderByDescending(r => r.PublishedAt)
+        .Skip(skip)
+        .Take(take)
+        .Select(r => r.VideoId)
+        .ToList();
+
+    return Json(reels);
+}
     }
 }

@@ -1,8 +1,7 @@
-﻿using System;
-using System.Text.Json;
+﻿using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Reels.Data;
 using Reels.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace Reels.Services;
 
@@ -26,16 +25,8 @@ public class YouTubeReelFetcher : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
-            {
-                await Fetch();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("YouTube Fetch Error: " + ex.Message);
-            }
-
-            await Task.Delay(TimeSpan.FromHours(8), stoppingToken);
+            await Fetch();
+            await Task.Delay(TimeSpan.FromHours(6), stoppingToken);
         }
     }
 
@@ -44,10 +35,14 @@ public class YouTubeReelFetcher : BackgroundService
         var apiKey = _config["YouTube:ApiKey"];
 
         var url =
-            $"https://www.googleapis.com/youtube/v3/search" +
-            $"?part=snippet&type=video&videoDuration=short" +
-            $"&q=coding programming sql csharp php" +
-            $"&maxResults=25&key={apiKey}";
+            "https://www.googleapis.com/youtube/v3/search" +
+            "?part=snippet" +
+            "&type=video" +
+            "&videoDuration=short" +
+            "&videoEmbeddable=true" +
+            "&q=coding programming csharp sql php" +
+            "&maxResults=25" +
+            "&key=" + apiKey;
 
         var client = _http.CreateClient();
         var json = await client.GetStringAsync(url);
@@ -64,29 +59,20 @@ public class YouTubeReelFetcher : BackgroundService
             var title = item.GetProperty("snippet").GetProperty("title").GetString();
             var publishedAt = item.GetProperty("snippet").GetProperty("publishedAt").GetDateTime();
 
-            if (await db.Reels.AnyAsync(r => r.VideoId == videoId))
-                continue;
+            if (videoId == null) continue;
 
-            if (!IsCoding(title))
+            if (await db.Reels.AnyAsync(r => r.VideoId == videoId))
                 continue;
 
             db.Reels.Add(new Reel
             {
                 VideoId = videoId,
-                Title = title,
-                Tags = "coding",
+                Title = title!,
                 PublishedAt = publishedAt,
                 Source = "YouTube"
             });
         }
 
         await db.SaveChangesAsync();
-    }
-
-    private bool IsCoding(string title)
-    {
-        var t = title.ToLower();
-        return t.Contains("code") || t.Contains("sql") ||
-               t.Contains("c#") || t.Contains("php");
     }
 }
