@@ -34,7 +34,6 @@ packages
 # obj
 
 # ASP.NET Core
-appsettings.json
 appsettings.Development.json
 .log
 

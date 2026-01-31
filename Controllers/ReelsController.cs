@@ -13,7 +13,7 @@ namespace Reels.Controllers
         }
 
         public IActionResult Index()
-        {
+       {
             var reels = _db.Reels
                 .OrderByDescending(r => r.PublishedAt)
                 .Take(50)
